@@ -1,0 +1,13 @@
+[Unit]
+Description=AQI_agent
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/node /home/pi/NB_IoT/agent/agent.js
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

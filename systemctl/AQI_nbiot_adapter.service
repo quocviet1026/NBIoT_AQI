@@ -1,0 +1,13 @@
+[Unit]
+Description=AQI_nbiot_adapter
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/node /home/pi/NB_IoT/nbiot_adapter/nbiot_adapter.js
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
