@@ -1,0 +1,16 @@
+{
+  "rn": {
+    "container":
+    {
+    	"application"  :"cnt_command",
+		  "platform"     :"cnt_config_platform",
+		  "telemetry"    :"cnt_telemetry",
+      "status"       :"cnt_device_status"
+    },
+    "subscription":
+  	{
+  		"application"  :"m_createSub8558",
+  		"platform"     :"m_createSub5885"		
+  	}
+  }
+}
