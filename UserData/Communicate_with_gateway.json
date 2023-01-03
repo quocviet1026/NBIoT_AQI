@@ -1,0 +1,8 @@
+{
+  "topic": {
+    "AgentToGateway": "MessageOutSideAgentToAgentProcess",
+    "GatewayToAgentCommand": "MessageOutSideAgentProcessToAgentCommand",
+    "GatewayToAgentTelemetry":"MessageOutSideAgentProcessToAgentTelemetry",
+    "GatewayToAgentDeviceStatus": "MessageOutSideAgentProcessToAgentDeviceStatus"
+  }
+}

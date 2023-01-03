@@ -1,0 +1,19 @@
+{
+  "name": "simcom_raspberrypi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@serialport/parser-readline": "^10.5.0",
+    "mqtt": "^4.3.7",
+    "mqtt-emitter": "^4.1.0",
+    "node-json-db": "^0.8.1",
+    "serialport": "^10.5.0",
+    "shelljs": "^0.8.5"
+  }
+}

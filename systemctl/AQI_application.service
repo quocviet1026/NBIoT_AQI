@@ -1,0 +1,13 @@
+[Unit]
+Description=AQI_application
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/node /home/pi/NB_IoT/application/app.js
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
