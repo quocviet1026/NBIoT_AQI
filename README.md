@@ -1,0 +1,1 @@
+Project AQI use SIMCOM NB IoT
