@@ -8,7 +8,7 @@ var config = {
 
     MQTT_TOPIC_AGENT_TO_APP: "Agent_To_Application",
 
-    DefaultUT: 60000,
+    DefaultUT: 70000,
 
     Hour: 23,
     Minute: 59,
