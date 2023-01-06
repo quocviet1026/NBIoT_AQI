@@ -3,6 +3,7 @@ const mqttClient = require('./mqtt.js');
 const fs = require('fs');
 const schedule = require('node-schedule');
 var events = require('events');
+const { clearInterval } = require('long-timeout');
 var eventEmitter = new events.EventEmitter();
 
 
@@ -41,6 +42,9 @@ var deviceID = {};
 var intervalID = {};
 var defaultUT = config.DefaultUT;
 var intervalOneHour = {};
+var flagDoubleData = 0;
+var intervalHourID = {};
+var intervalDailyID = {};
 
 /*Define Topic to Receive and Send message */
 var topicSendTelemetryToAgent = config.MQTT_TOPIC_APP_TO_AGENT_TELEMETRY; 	   //Topic to Send message Telemetry to Agent
@@ -71,6 +75,7 @@ function sendMessageMqtt(messageToSend, topic) {
 
 try {
   var dataRead = fs.readFileSync('/home/pi/NB_IoT/application/deviceID.txt', 'utf8');
+  // var dataRead = fs.readFileSync('./deviceID.txt', 'utf8');
   deviceID = dataRead;
   console.log('\n\n\nDevice ID: ', deviceID);
 
@@ -81,6 +86,11 @@ try {
 /********************************Random Data******************************************/
 function genRandomData(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/********************************Random Data******************************************/
+function clearFlagDoubleData() {
+  flagDoubleData = 0;
 }
 
 /******************************* Gen Random Data******************************************/
@@ -161,7 +171,13 @@ function processData() {
   objTelemetry.Data.PM2_5 = PM2_5;
   objTelemetry.Data.PM10 = PM10;
 
-  sendMessageMqtt(objTelemetry, topicSendTelemetryToAgent);
+  if (!flagDoubleData) {
+    sendMessageMqtt(objTelemetry, topicSendTelemetryToAgent);
+    flagDoubleData = 1;
+    setTimeout(clearFlagDoubleData, 10000);
+  } else {
+    ;
+  }
 }
 
 function processDataOneHour() {
@@ -225,7 +241,22 @@ function processDataOneHour() {
   objTelemetry.Data.PM10 = PM10;
   objTelemetry.Data.AQIS = AQIS;
 
-  sendMessageMqtt(objTelemetry, topicSendTelemetryToAgent);
+  if (!flagDoubleData) {//flagDoubleData == 0
+    sendMessageMqtt(objTelemetry, topicSendTelemetryToAgent);
+    flagDoubleData = 1;
+    setTimeout(clearFlagDoubleData, 10000);
+  } else {
+    intervalHourID = setInterval(() => {
+      if (!flagDoubleData) {
+        sendMessageMqtt(objTelemetry, topicSendTelemetryToAgent);
+        flagDoubleData = 1;
+        setTimeout(clearFlagDoubleData, 10000);
+        clearInterval(intervalHourID);
+      } else {
+        ;
+      }
+    }, 1000);
+  }
 }
 
 function processDataDaily() {
@@ -290,7 +321,22 @@ function processDataDaily() {
   objTelemetry.Data.PM10 = PM10;
   objTelemetry.Data.AQIS = AQIS;
 
-  sendMessageMqtt(objTelemetry, topicSendTelemetryToAgent);
+  if (!flagDoubleData) {
+    sendMessageMqtt(objTelemetry, topicSendTelemetryToAgent);
+    flagDoubleData = 1;
+    setTimeout(clearFlagDoubleData, 10000);
+  } else {
+    intervalDailyID = setInterval(() => {
+      if (!flagDoubleData) {
+        sendMessageMqtt(objTelemetry, topicSendTelemetryToAgent);
+        flagDoubleData = 1;
+        setTimeout(clearFlagDoubleData, 10000);
+        clearInterval(intervalDailyID);
+      } else {
+        ;
+      }
+    }, 1000);
+  }
 }
 
 /*******************************Handle Application************************************/
