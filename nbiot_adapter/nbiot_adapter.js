@@ -41,8 +41,8 @@ var Config = {
   MQTT_BROKER_LOCAL_PORT          : 1883,                           //MQTT Local port
   MQTT_BROKER_LOCAL_ADDRESS       : "127.0.0.1",                    //MQTT Local Address
   
-//  LOCAL_USERNAME                  : "simcom7022",
-//  LOCAL_PASSWORD                  : "vnpt123",
+  LOCAL_USERNAME                  : "vnpt123",
+  LOCAL_PASSWORD                  : "vnpt123",
 
   /*Topic communicate with Agent*/
   MQTT_TOPIC_SEND_MESSAGE_TO_AGENT             : "Adapter_To_Agent",
@@ -64,6 +64,7 @@ var simcomInitError_mess = {
 };
 
 var simcomInit_FLAG = 0;
+var mqttpub_FLAG = 0;
 
 // Set up module sim, Connect to mqtt broker and subscribe to One_topic
 async function initSimcom7022(simcomATSerial,mqttLocal) {
@@ -72,6 +73,8 @@ async function initSimcom7022(simcomATSerial,mqttLocal) {
   simcomInit_FLAG = 1;
 
   // Restart the Chip
+  //await mySleep(1000);
+  //simcomATSerial.send("ATI\r\n");
   await mySleep(1000);
   simcomATSerial.send("AT+QCRST\r");
   await mySleep(5000);
@@ -206,6 +209,8 @@ var optionsMqttPlatform = {
 var optionsLocal = {
   port: Config.MQTT_BROKER_LOCAL_PORT,
   host: Config.MQTT_BROKER_LOCAL_ADDRESS,
+  username: Config.LOCAL_USERNAME,
+  password: Config.LOCAL_PASSWORD,
 };
 
 var mqttClientLocal =  mqtt.connect(optionsLocal);
@@ -259,32 +264,40 @@ function mySleep(ms)
 
 // Use aasync function to use mysleep
 async function sendMessageMqttToSim(simcomATSerial, topic, message) {
-  console.log("\nsendMessageMqttToSim ---> topic:"+topic);
-  console.log('sendMessageMqttToSim ---> message:'+message);
+  if (mqttpub_FLAG == 1) {
+    console.log("\nsendMessageMqttToSim ---> BUSY:"+mqttpub_FLAG);
+  } else {
 
-  // Disconnect from MQTT server
-  // simcomATSerial.send("AT+CMQTTDISC=0,30\r");
-  // await mySleep(1000);
+    // Set publish flash, being publish
+    mqttpub_FLAG = 1;
 
-  // Connect to MQTT server
-  // simcomATSerial.send("AT+CMQTTCONNECT=0,"+"\""+"tcp://"+OneHome_mqttbroker_ip+":1883\""+",64800,1\r");
-  // await mySleep(3000);
+    console.log("\nsendMessageMqttToSim ---> topic:"+topic);
+    console.log('sendMessageMqttToSim ---> message:'+message);
 
-  // Input the topic of publish message
-  simcomATSerial.send("AT+CMQTTTOPIC=0,"+topic.length+"\r");
-  await mySleep(2000);
-  simcomATSerial.send(topic+"\r");
-  await mySleep(1000);
+    // Disconnect from MQTT server
+    // simcomATSerial.send("AT+CMQTTDISC=0,30\r");
+    // await mySleep(1000);
 
-  // Input the publish message
-  simcomATSerial.send("AT+CMQTTPAYLOAD=0,"+message.length+"\r");
-  await mySleep(2000);
-  simcomATSerial.send(message+"\r");
-  await mySleep(1000);
+    // Connect to MQTT server
+    // simcomATSerial.send("AT+CMQTTCONNECT=0,"+"\""+"tcp://"+OneHome_mqttbroker_ip+":1883\""+",64800,1\r");
+    // await mySleep(3000);
 
-  // Publish a message to server
-  simcomATSerial.send("AT+CMQTTPUB=0,1,60\r");
-  await mySleep(1000);
+    // Input the topic of publish message
+    simcomATSerial.send("AT+CMQTTTOPIC=0,"+topic.length+"\r");
+    await mySleep(2000);
+    simcomATSerial.send(topic+"\r");
+    await mySleep(1000);
+
+    // Input the publish message
+    simcomATSerial.send("AT+CMQTTPAYLOAD=0,"+message.length+"\r");
+    await mySleep(2000);
+    simcomATSerial.send(message+"\r");
+    await mySleep(1000);
+
+    // Publish a message to server
+    simcomATSerial.send("AT+CMQTTPUB=0,1,60\r");
+    await mySleep(1000);    
+  }
 }
 
 function sendMessageMqttToAgent(message) {
@@ -360,6 +373,23 @@ function getsimcomIMEI(message) {
   }
 }
 
+function getsubErrorCode(message) {
+
+  var subErrorCode;
+
+  // remove <CR><LF> 
+  message = message.replaceAll("\r","");
+  message = message.replaceAll("\n","");
+  // remove white space
+  message = message.replaceAll(" ","");
+
+  // split message string
+  subErrorCode = message.split(",")[1];
+  console.log('subErrorCode:' + subErrorCode);
+
+  return subErrorCode;
+}
+
 /*--------------------------------------------------------Parser and handle message from Agent ----------------------------------------------------------------------------*/
 /*
 When recevice message from agent:
@@ -417,16 +447,52 @@ simcomClient.on('resp_message', function(message_payload) {
 
   try {
     //Receive message from agent, send to Simcom
-    if (message_payload.includes("CDNSGIP")) {
+    if (message_payload.includes("+CDNSGIP:")) {
       getmqttrokerIP(message_payload);
-    } else if (message_payload.includes("CGSN")) {
+    } else if (message_payload.includes("+CGSN:")) {
       getsimcomIMEI(message_payload);
-    }else if (message_payload.includes("CMQTTCONNLOST")) {
+    }else if (message_payload.includes("+CMQTTCONNLOST:")) {
       // NOT doing init simcom
       if (simcomInit_FLAG == 0) {
         connectMqtt(serialSimCom, mqttClientLocal);
       }
-    } else if (message_payload.includes("ERROR")) {
+    } else if (message_payload.includes("+CMQTTTOPIC:")) {
+      if (parseInt(getsubErrorCode(message_payload),10) !== 0) {
+        // NOT doing init simcom
+        if (simcomInit_FLAG == 0) {
+          simcomInit_FLAG = 1;
+          initSimcom7022_again(serialSimCom, mqttClientLocal);  // init again
+        }
+      }
+    } else if (message_payload.includes("+CMQTTPAYLOAD:")) {
+      if (parseInt(getsubErrorCode(message_payload),10) !== 0) {
+        // NOT doing init simcom
+        if (simcomInit_FLAG == 0) {
+          simcomInit_FLAG = 1;
+          initSimcom7022_again(serialSimCom, mqttClientLocal);  // init again
+        }
+      }
+    } else if (message_payload.includes("+CMQTTPUB:")) {
+
+      // Clear publish flash, NOT being publish
+      mqttpub_FLAG = 0;
+      
+      if (parseInt(getsubErrorCode(message_payload),10) !== 0) {
+        // NOT doing init simcom
+        if (simcomInit_FLAG == 0) {
+          simcomInit_FLAG = 1;
+          initSimcom7022_again(serialSimCom, mqttClientLocal);  // init again
+        }
+      }
+    }else if (message_payload.includes("+CMQTTSUB:")) {
+      if (parseInt(getsubErrorCode(message_payload),10) !== 0) {
+        // NOT doing init simcom
+        if (simcomInit_FLAG == 0) {
+          simcomInit_FLAG = 1;
+          initSimcom7022_again(serialSimCom, mqttClientLocal);  // init again
+        }
+      }
+    }else if (message_payload.includes("ERROR")) {
       // NOT doing init simcom
       if (simcomInit_FLAG == 0) {
         simcomInit_FLAG = 1;
