@@ -507,6 +507,7 @@ function handle_message_adapter(messageParsed) {
 			}
 			if(messageParsed.dataMessage === '0') {
 				flagAdapterReady = 0;
+				flagConnetedToPlatform = 0;
 			}
 			break;
 		}
@@ -558,7 +559,7 @@ function handle_application_telemetry(messageParsed) {
 	//console.log(('message from Application Telemetry: ') + util.inspect(messageParsed,false, null, true));
 	/*Send data receive from Application to Platform*/
 
-	if(flagAdapterReady == 1){
+	if((flagAdapterReady == 1) && (flagConnetedToPlatform == 1)){
 		var payload_send_command_to_app = crt_contenInstance_to_app_telemetry(JSON.stringify(messageParsed));			
 		Agent_PublishData_To_Platform_Telemetry(topic_pub_req_command,payload_send_command_to_app);	
 		Tooltest_Publish_Send_Cnt_Telemetry(payload_send_command_to_app);	
